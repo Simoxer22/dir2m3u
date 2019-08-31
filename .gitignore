@@ -1,2 +1,4 @@
 /target
 **/*.rs.bk
+*.mp3
+*.m3u
