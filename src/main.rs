@@ -7,10 +7,11 @@ fn main() {
         .about("Create m3u playlists from directories")
         .arg(Arg::with_name("DIRECTORY")
             .default_value(".")
-            .required(true))
+            .required(true)
+            .help("directory used to create the playlist"))
         .arg(Arg::with_name("recursive")
             .short("r")
-            .help("Turn subdirectories into playlists too"))
+            .help("recursive: turn subdirectories into playlists too"))
         .get_matches();
     
     let dir = matches.value_of("DIRECTORY").unwrap();
