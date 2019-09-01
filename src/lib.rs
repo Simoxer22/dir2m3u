@@ -32,56 +32,49 @@ pub fn run(conf: Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn recursive(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
-    let directories = dir.read_dir()?
-        .take_while(|file| match file {
-            Ok(file) => file.path().is_dir(),
-            Err(_) => false,
-        });
-
-    for dir in directories {
+    for dir in dir.read_dir()? {
         let p = dir?.path();
-        eprintln!("{:?}", p.display());
-        recursive(dest, p)?;
+        if p.is_dir() {
+            recursive(dest, p)?;
+        }
     }
 
     make_playlist(&dest, dir)
 }
 
 fn make_playlist (dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
-    let mut filename = dir.canonicalize()?
-        .file_name().unwrap()
-        .to_str().unwrap()
-        .to_owned();
-    filename.push_str(".m3u");
+    if let Some(buf) = gen_playlist(&dir){
+        
+        let mut filename = dir.canonicalize()?
+            .file_name().unwrap()
+            .to_str().unwrap()
+            .to_owned();
+        filename.push_str(".m3u");
 
-    let mut filepath = dest.to_owned();
-    filepath.push(filename);
+        let mut filepath = dest.to_owned();
+        filepath.push(filename);
 
-    let mut file = File::create(filepath)?;
-    write_playlist(&mut file, &dir)?;
+        let mut file = File::create(filepath)?;
+        file.write(buf.as_bytes())?;
+    }
     Ok(())
 }
 
-fn write_playlist(file: &mut File, dir: &Path) -> Result<(),Box<dyn Error>> {
-    let songs = dir.read_dir()?
-        .take_while(|file| match file {
-            Ok(file) => match file.path().is_dir() {
-                false => file.path().extension().unwrap_or_default() == "mp3",
-                true => false,
-            },
-            Err(_) => false,
-        });
-    let mut writeheader = true;
+fn gen_playlist(dir: &Path) -> Option<String> {
+    let mut buf = String::from("#EXTM3U\n");
 
-    for song in songs {
-        if writeheader {
-            writeheader = false;
-            file.write("#EXTM3U\n".as_bytes())?;
+    for song in dir.read_dir().unwrap() {
+        let path : PathBuf = song.unwrap().path();
+        if !path.is_dir() && path.extension().unwrap_or_default().to_str().unwrap() == "mp3" {
+            let songname = path.file_stem().unwrap_or_default().to_str().unwrap_or_default();
+            buf.push_str(format!("#EXTINF:{0}\n{1}\n", songname, path.display()).as_str());
         }
-        let path : PathBuf = song?.path();
-        let songname = path.file_stem().unwrap_or_default().to_str().unwrap_or_default();
-        file.write(format!("#EXTINF:{0}\n{1}\n", songname, path.display()).as_bytes())?;
     }
-
-    Ok(())
+    
+    if buf.len() > "#EXTM3U\n".len() {
+        Some(buf)
+    }
+    else {
+        None
+    }
 }
