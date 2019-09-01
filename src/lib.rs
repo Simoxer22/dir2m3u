@@ -38,13 +38,12 @@ fn recursive(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
             recursive(dest, p)?;
         }
     }
-
     make_playlist(&dest, dir)
 }
 
 fn make_playlist (dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
-    if let Some(buf) = gen_playlist(&dir){
-        
+    if let Some(buf) = gen_playlist(&dir)?{
+
         let mut filename = dir.canonicalize()?
             .file_name().unwrap()
             .to_str().unwrap()
@@ -60,21 +59,23 @@ fn make_playlist (dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn gen_playlist(dir: &Path) -> Option<String> {
+fn gen_playlist(dir: &Path) -> Result<Option<String>, Box<dyn Error>> {
     let mut buf = String::from("#EXTM3U\n");
 
-    for song in dir.read_dir().unwrap() {
-        let path : PathBuf = song.unwrap().path();
-        if !path.is_dir() && path.extension().unwrap_or_default().to_str().unwrap() == "mp3" {
-            let songname = path.file_stem().unwrap_or_default().to_str().unwrap_or_default();
-            buf.push_str(format!("#EXTINF:{0}\n{1}\n", songname, path.display()).as_str());
+    for song in dir.read_dir()? {
+        let path : PathBuf = song?.path();
+
+        if !path.is_dir() && path.extension().unwrap_or_default() == "mp3" {
+            let songname = path.file_stem()
+                .unwrap_or_default();
+            buf.push_str(format!("#EXTINF:{0:?}\n{1}\n", songname, path.display()).as_str());
         }
     }
     
     if buf.len() > "#EXTM3U\n".len() {
-        Some(buf)
+        Ok(Some(buf))
     }
     else {
-        None
+        Ok(None)
     }
 }

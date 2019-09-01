@@ -12,6 +12,9 @@ fn main() {
         .arg(Arg::with_name("recursive")
             .short("r")
             .help("recursive: turn subdirectories into playlists too"))
+        .arg(Arg::with_name("depth")
+            .short("d")
+            .help("set maximum depth for recursion (NOT IMPLEMENTED)"))
         .get_matches();
     
     let dir = matches.value_of("DIRECTORY").unwrap();
