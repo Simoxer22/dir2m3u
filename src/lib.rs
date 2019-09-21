@@ -31,8 +31,11 @@ pub fn run(conf: Config) -> Result<(), Box<dyn Error>> {
 fn recursive(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     let dirs = dir
         .read_dir()?
-        .map(|f| f.unwrap().path())
-        .take_while(|p| p.is_dir());
+        .filter_map(|e| match e {
+            Ok(entry) => Some(entry.path()),
+            Err(_) => None,
+        })
+        .filter(|p| p.is_dir());
 
     for dir in dirs {
         recursive(dest, dir)?;
@@ -58,8 +61,11 @@ fn gen_playlist(dir: &Path) -> Result<Option<String>, Box<dyn Error>> {
 
     let songs = dir
         .read_dir()?
-        .map(|file| file.unwrap().path())
-        .take_while(|file| file.is_file() && file.extension().unwrap_or_default() == "mp3");
+        .filter_map(|e| match e {
+            Ok(entry) => Some(entry.path()),
+            Err(_) => None,
+        })
+        .filter(|p| p.is_file() && p.extension().unwrap_or_default() == "mp3");
 
     for song in songs {
         let songname = song.file_stem().unwrap_or_default();
