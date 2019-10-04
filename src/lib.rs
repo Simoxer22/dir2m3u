@@ -28,6 +28,7 @@ pub fn run(conf: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Traverse all directories contained in `dir` recursively and call `make_playlist` for each one
 fn recursive(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     let dirs = dir
         .read_dir()?
@@ -43,6 +44,7 @@ fn recursive(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     make_playlist(&dest, dir)
 }
 
+/// Call `gen_playlist` and write it to file
 fn make_playlist(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     if let Some(buf) = gen_playlist(&dir)? {
         let mut filename = dir.canonicalize()?.file_name().unwrap().to_owned();
@@ -56,8 +58,11 @@ fn make_playlist(dest: &PathBuf, dir: PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+const M3U_HEAD: &str = "#EXTM3U\n";
+
+/// Iterate over `mp3` and create m3u format String
 fn gen_playlist(dir: &Path) -> Result<Option<String>, Box<dyn Error>> {
-    let mut buf = String::from("#EXTM3U\n");
+    let mut buf = String::from(M3U_HEAD);
 
     let songs = dir
         .read_dir()?
@@ -72,7 +77,7 @@ fn gen_playlist(dir: &Path) -> Result<Option<String>, Box<dyn Error>> {
         buf.push_str(format!("#EXTINF:{0:?}\n{1}\n", songname, song.display()).as_str());
     }
 
-    if buf.len() > "#EXTM3U\n".len() {
+    if buf.len() > M3U_HEAD.len() {
         Ok(Some(buf))
     } else {
         Ok(None)

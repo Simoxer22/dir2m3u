@@ -11,9 +11,11 @@ fn main() {
             .help("directory used to create the playlist"))
         .arg(Arg::with_name("recursive")
             .short("r")
+            .long("recursive")
             .help("recursive: turn subdirectories into playlists too"))
         .arg(Arg::with_name("depth")
             .short("d")
+            .long("depth")
             .help("set maximum depth for recursion (NOT IMPLEMENTED)"))
         .get_matches();
     
