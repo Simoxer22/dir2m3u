@@ -50,7 +50,7 @@ fn recursive<F> (closure: F, dir: &PathBuf) -> Result<(), Box<dyn Error>>
     (&closure)(&dir)
 }
 
-/// Call `gen_playlist` and write it to file
+/// Make an `m3u` playlist containing the songs in the `dir` directory and write it in a file in the `dest` directory
 fn make_playlist(dest: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
     let songs = dir
         .read_dir()?
@@ -74,7 +74,9 @@ fn make_playlist(dest: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
 
 const M3U_HEAD: &str = "#EXTM3U\n";
 
-/// Iterate over `mp3` and create m3u format String
+/// Create `m3u` file contents from an iterator over song paths
+/// # Arguments
+/// `songs` Iterator containg the PathBuf of the song files
 fn gen_playlist<I : Iterator<Item=PathBuf>>(songs: I) -> Result<Option<String>, Box<dyn Error>> {
     let mut buf = String::from(M3U_HEAD);
 
@@ -99,9 +101,15 @@ mod tests {
             PathBuf::from("./dir1/dir3/songname2.mp3"),
             PathBuf::from("./songname3.mp3"),
             PathBuf::from("./dir1/dir3/dir2/songname4.mp3"),
-        ].into_iter();
+        ];
 
-        let generated_lines = super::gen_playlist(testpaths).unwrap().unwrap();
+        let ret = super::gen_playlist(testpaths.clone().into_iter());
+        assert!(ret.is_ok());
+
+        let ret_content = ret.unwrap();
+        assert!(ret_content.is_some());
+
+        let generated_lines = ret_content.unwrap();
 
         let mut generated_iter = generated_lines.split('\n');
 
@@ -110,10 +118,15 @@ mod tests {
             Some(M3U_HEAD.trim_end())
         );
 
-        assert_eq!(
-            generated_iter.next().unwrap()[..8],
-            "#EXTINF:"[..8]
-        )
-
+        for i in 0..testpaths.len() {
+            assert_eq!(
+                generated_iter.next().unwrap()[..8],
+                "#EXTINF:"[..8]
+            );
+            assert_eq!(
+                PathBuf::from(generated_iter.next().unwrap()),
+                testpaths[i]
+            );
+        }
     }
 }
