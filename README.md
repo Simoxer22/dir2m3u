@@ -1,6 +1,6 @@
 # dir2m3u
 
-Create `.m3u` playlists from a directoy structure
+Create `.m3u` playlists from a directory structure
 
 ## Usage
 
