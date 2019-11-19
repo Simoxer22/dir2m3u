@@ -9,11 +9,11 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(dir: &str, rec: bool) -> Result<Config, Box<dyn Error>> {
-        Ok(Config {
+    pub fn new(dir: &str, rec: bool) -> Config {
+        Config {
             directory: PathBuf::from(dir),
             recursive: rec,
-        })
+        }
     }
 }
 
@@ -28,11 +28,11 @@ pub fn run(conf: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Traverse all directories contained in `dir` recursively and call `make_playlist` on each one
+/// Traverse all directories contained in `dir` and call `closure` on each directory
 /// 
 /// # Arguments
-/// + `dest` destination path
-/// + `dir` directory to 
+/// + `closure` closure that takes a directory as argument
+/// + `dir` root directory of the recursion
 /// 
 fn recursive<F> (closure: F, dir: &PathBuf) -> Result<(), Box<dyn Error>> 
     where F : Fn(&PathBuf) -> Result<(), Box<dyn Error>> + Copy {
@@ -50,8 +50,13 @@ fn recursive<F> (closure: F, dir: &PathBuf) -> Result<(), Box<dyn Error>>
     (&closure)(&dir)
 }
 
-/// Make an `m3u` playlist containing the songs in the `dir` directory and write it in a file in the `dest` directory
-fn make_playlist(dest: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+/// Create and write `m3u` file (if valid)
+/// 
+/// # Arguments
+/// + `destination` where you want the file to be written to
+/// + `dir` directory structure to parse
+fn make_playlist(destination: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+    // Iterate over valid mp3 files
     let songs = dir
         .read_dir()?
         .filter_map(|e| match e {
@@ -61,11 +66,13 @@ fn make_playlist(dest: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
         .filter(|p| p.is_file() && p.extension().unwrap_or_default() == "mp3");
 
     if let Some(buf) = gen_playlist(songs)? {
+        // Build playlist path
         let mut filename = dir.canonicalize()?.file_name().unwrap().to_owned();
         filename.push(".m3u");
-        let mut filepath = dest.to_owned();
+        let mut filepath = destination.to_owned();
         filepath.push(filename);
 
+        // Write m3u to file
         let mut file = File::create(filepath)?;
         file.write_all(buf.as_bytes())?;
     }
@@ -74,9 +81,10 @@ fn make_playlist(dest: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
 
 const M3U_HEAD: &str = "#EXTM3U\n";
 
-/// Create `m3u` file contents from an iterator over song paths
+/// Create `m3u` content from an iterator over song paths
+/// 
 /// # Arguments
-/// `songs` Iterator containg the PathBuf of the song files
+/// + `songs` Iterator containg the PathBuf of the song files
 fn gen_playlist<I : Iterator<Item=PathBuf>>(songs: I) -> Result<Option<String>, Box<dyn Error>> {
     let mut buf = String::from(M3U_HEAD);
 

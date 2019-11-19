@@ -22,13 +22,7 @@ fn main() {
     let dir = matches.value_of("DIRECTORY").unwrap();
     let rec = matches.is_present("recursive");
     
-    let conf = match Config::new(dir, rec) {
-        Ok(conf) => conf,
-        Err(why) => {
-            println!("Error generating configuration: {:?}", why);
-            std::process::exit(1);
-        }
-    };
+    let conf = Config::new(dir, rec);
 
     if let Err(why) = dir2m3u::run(conf) {
         println!("Error: {:?}", why);
