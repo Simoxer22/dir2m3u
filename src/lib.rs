@@ -65,7 +65,7 @@ fn make_playlist(destination: &PathBuf, dir: &PathBuf) -> Result<(), Box<dyn Err
         })
         .filter(|p| p.is_file() && p.extension().unwrap_or_default() == "mp3");
 
-    if let Some(buf) = gen_playlist(songs)? {
+    if let Some(buf) = gen_playlist(songs) {
         // Build playlist path
         let mut filename = dir.canonicalize()?.file_name().unwrap().to_owned();
         filename.push(".m3u");
@@ -85,7 +85,7 @@ const M3U_HEAD: &str = "#EXTM3U\n";
 /// 
 /// # Arguments
 /// + `songs` Iterator containg the PathBuf of the song files
-fn gen_playlist<I : Iterator<Item=PathBuf>>(songs: I) -> Result<Option<String>, Box<dyn Error>> {
+fn gen_playlist<I : Iterator<Item=PathBuf>>(songs: I) -> Option<String> {
     let mut buf = String::from(M3U_HEAD);
 
     for song in songs {
@@ -93,9 +93,9 @@ fn gen_playlist<I : Iterator<Item=PathBuf>>(songs: I) -> Result<Option<String>, 
         buf.push_str(format!("#EXTINF:{0:?}\n{1}\n", songname, song.display()).as_str());
     }
     if buf.len() > M3U_HEAD.len() {
-        Ok(Some(buf))
+        Some(buf)
     } else {
-        Ok(None)
+        None
     }
 }
 
@@ -112,12 +112,10 @@ mod tests {
         ];
 
         let ret = super::gen_playlist(testpaths.clone().into_iter());
-        assert!(ret.is_ok());
 
-        let ret_content = ret.unwrap();
-        assert!(ret_content.is_some());
+        assert!(ret.is_some());
 
-        let generated_lines = ret_content.unwrap();
+        let generated_lines = ret.unwrap();
 
         let mut generated_iter = generated_lines.split('\n');
 
